@@ -18,9 +18,20 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Helpers\LogActivity;
+use App\Services\TemplateService;
+use App\Services\EventBuilderService;
+use App\Helpers\BackgroundHelper;
 
 class GuestController extends Controller
 {
+    private TemplateService $templateService;
+    private EventBuilderService $eventBuilderService;
+
+    public function __construct(TemplateService $templateService, EventBuilderService $eventBuilderService)
+    {
+        $this->templateService = $templateService;
+        $this->eventBuilderService = $eventBuilderService;
+    }
 
     public function welcome()
     {
@@ -31,228 +42,60 @@ class GuestController extends Controller
             'blogs' => $blogs
         ]);
     }
-    public function view($slug)
+
+    public function view(string $slug)
     {
         $event = Event::where('slug', $slug)->with('audio')->first();
-        $data_guestbook = GuestBook::where('event_id', $event->id)->get();
-
-        $photo_event = PhotoEvent::where('event_id', $event->id)->get()->toArray();
+        
+        if (!$event) {
+            abort(404);
+        }
 
         $kalimat = 'Lihat undangan pernikahan ' . $event->nama_lengkap_mempelai_wanita . ' & ' . $event->nama_lengkap_mempelai_pria;
         LogActivity::addToLog($kalimat, 'Lihat Undangan');
 
-        switch ($event->template) {
-            case 'Gold':
-                return view('guest.preview-gold', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Soft':
-                return view('guest.preview-soft', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Prime':
-                return view('guest.preview-prime', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Silver':
-                return view('guest.preview-silver', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Chocolate':
-                return view('guest.preview-choco', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Pink':
-                return view('guest.preview-pink', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Crystal':
-                return view('guest.preview-crystal', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Grey':
-                return view('guest.preview-grey', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Bronze':
-                return view('guest.preview-bronze', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Blue':
-                return view('guest.preview-blue', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-
-                // v1-v5
-            case 'Camel':
-                return view('guest.preview-camel', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Ruby':
-                return view('guest.preview-ruby', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Goldy':
-                return view('guest.preview-goldy', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Navy':
-                return view('guest.preview-navy', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Natural':
-                return view('guest.preview-natural', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'jawa':
-                return view('guest.preview-jawa', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-
-                // Basic
-            case 'Basic':
-                return view('guest.preview-basic', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-                // regular
-            case 'Regular':
-                return view('guest.preview-regular', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
-                break;
-            case 'Custom':
-                $hero = DB::table('hero_section')->where('event_id', $event->id)->first();
-                $invitation = DB::table('invitation_section')->where('event_id', $event->id)->first();
-                $gallery = DB::table('gallery_section')->where('event_id', $event->id)->first();
-                $countdown = DB::table('countdown_section')->where('event_id', $event->id)->first();
-                $maps = DB::table('maps_section')->where('event_id', $event->id)->first();
-                $streaming = DB::table('streaming_section')->where('event_id', $event->id)->first();
-                $videos = DB::table('videos_section')->where('event_id', $event->id)->first();
-                $_event = DB::table('event_section')->where('event_id', $event->id)->first();
-                $comment = DB::table('comment_section')->where('event_id', $event->id)->first();
-                $footer = DB::table('footer_section')->where('event_id', $event->id)->first();
-                if ($hero !== null && $hero->background !== null) {
-                    $this->_cekJenisBackground($hero, $slug, $event);
-                }
-                if ($invitation !== null && $invitation->background !== null) {
-                    $this->_cekJenisBackground($invitation, $slug, $event);
-                }
-                if ($gallery !== null && $gallery->background !== null) {
-                    $this->_cekJenisBackground($gallery, $slug, $event);
-                }
-                if ($countdown !== null && $countdown->background !== null) {
-                    $this->_cekJenisBackground($countdown, $slug, $event);
-                }
-                if ($maps !== null && $maps->background !== null) {
-                    $this->_cekJenisBackground($maps, $slug, $event);
-                }
-                if ($streaming !== null && $streaming->background !== null) {
-                    $this->_cekJenisBackground($streaming, $slug, $event);
-                }
-                if ($videos !== null && $videos->background !== null) {
-                    $this->_cekJenisBackground($videos, $slug, $event);
-                }
-                if ($_event !== null && $_event->background !== null) {
-                    $this->_cekJenisBackground($_event, $slug, $event);
-                }
-                if ($comment !== null && $comment->background !== null) {
-                    $this->_cekJenisBackground($comment, $slug, $event);
-                }
-                if ($footer !== null && $footer->background !== null) {
-                    $this->_cekJenisBackground($footer, $slug, $event);
-                }
-
-                return view('event-builder-page', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event,
-                    'hero' => $hero,
-                    'invitation' => $invitation,
-                    'gallery' => $gallery,
-                    'countdown' => $countdown,
-                    'maps' => $maps,
-                    'streaming' => $streaming,
-                    'videos' => $videos,
-                    '_event' => $_event,
-                    'comment' => $comment,
-                    'footer' => $footer,
-                ]);
-                break;
-            default:
-                return view('guest.preview-gold', [
-                    'event' => $event,
-                    'data_guestbook' => $data_guestbook,
-                    'photo_event' => $photo_event
-                ]);
+        // Handle custom template with event builder
+        if ($event->template === 'Custom') {
+            return $this->renderCustomTemplate($event, $slug);
         }
+
+        // Handle standard templates
+        return $this->templateService->renderTemplate($event);
     }
 
-    public function redirect($id)
+    /**
+     * Render custom template with event builder sections
+     */
+    private function renderCustomTemplate(Event $event, string $slug): \Illuminate\View\View
+    {
+        $viewData = $this->eventBuilderService->getEventBuilderData($event);
+        $sections = $this->eventBuilderService->getEventBuilderSections($event);
+        $this->eventBuilderService->processBackgrounds($sections, $slug, $event);
+
+        return view('event-builder-page', $viewData);
+    }
+
+    public function redirect(int $id): \Illuminate\Http\RedirectResponse
     {
         $event = Event::find($id);
+        
+        if (!$event) {
+            abort(404);
+        }
 
         return redirect()->route('see.guestbook', [
             'slug' => $event->slug
         ]);
     }
 
-
-    public function guestbook($slug)
+    public function guestbook(string $slug): \Illuminate\View\View
     {
         $event = Event::where('slug', $slug)->first();
+        
+        if (!$event) {
+            abort(404);
+        }
+        
         $data_guestbook = GuestBook::where('event_id', $event->id)->get();
 
         return view('guest.guestbook', [
@@ -261,71 +104,22 @@ class GuestController extends Controller
         ]);
     }
 
-    public function basiceventpage($slug)
+    public function basiceventpage(string $slug): \Illuminate\View\View
     {
         $event = Event::where('slug', $slug)->with('audio')->first();
-        $data_guestbook = GuestBook::where('event_id', $event->id)->get();
-        $hero = DB::table('hero_section')->where('event_id', $event->id)->first();
-        $invitation = DB::table('invitation_section')->where('event_id', $event->id)->first();
-        $gallery = DB::table('gallery_section')->where('event_id', $event->id)->first();
-        $countdown = DB::table('countdown_section')->where('event_id', $event->id)->first();
-        $maps = DB::table('maps_section')->where('event_id', $event->id)->first();
-        $streaming = DB::table('streaming_section')->where('event_id', $event->id)->first();
-        $videos = DB::table('videos_section')->where('event_id', $event->id)->first();
-        $_event = DB::table('event_section')->where('event_id', $event->id)->first();
-        $comment = DB::table('comment_section')->where('event_id', $event->id)->first();
-        $footer = DB::table('footer_section')->where('event_id', $event->id)->first();
-        // dd($invitation);
-        $photo_event = PhotoEvent::where('event_id', $event->id)->get()->toArray();
-        if ($hero !== null && $hero->background !== null) {
-            $this->_cekJenisBackground($hero, $slug, $event);
-        }
-        if ($invitation !== null && $invitation->background !== null) {
-            $this->_cekJenisBackground($invitation, $slug, $event);
-        }
-        if ($gallery !== null && $gallery->background !== null) {
-            $this->_cekJenisBackground($gallery, $slug, $event);
-        }
-        if ($countdown !== null && $countdown->background !== null) {
-            $this->_cekJenisBackground($countdown, $slug, $event);
-        }
-        if ($maps !== null && $maps->background !== null) {
-            $this->_cekJenisBackground($maps, $slug, $event);
-        }
-        if ($streaming !== null && $streaming->background !== null) {
-            $this->_cekJenisBackground($streaming, $slug, $event);
-        }
-        if ($videos !== null && $videos->background !== null) {
-            $this->_cekJenisBackground($videos, $slug, $event);
-        }
-        if ($_event !== null && $_event->background !== null) {
-            $this->_cekJenisBackground($_event, $slug, $event);
-        }
-        if ($comment !== null && $comment->background !== null) {
-            $this->_cekJenisBackground($comment, $slug, $event);
-        }
-        if ($footer !== null && $footer->background !== null) {
-            $this->_cekJenisBackground($footer, $slug, $event);
+        
+        if (!$event) {
+            abort(404);
         }
 
-        return view('event-builder-page', [
-            'event' => $event,
-            'data_guestbook' => $data_guestbook,
-            'photo_event' => $photo_event,
-            'hero' => $hero,
-            'invitation' => $invitation,
-            'gallery' => $gallery,
-            'countdown' => $countdown,
-            'maps' => $maps,
-            'streaming' => $streaming,
-            'videos' => $videos,
-            '_event' => $_event,
-            'comment' => $comment,
-            'footer' => $footer,
-        ]);
+        $viewData = $this->eventBuilderService->getEventBuilderData($event);
+        $sections = $this->eventBuilderService->getEventBuilderSections($event);
+        $this->eventBuilderService->processBackgrounds($sections, $slug, $event);
+
+        return view('event-builder-page', $viewData);
     }
 
-    public function listEvent()
+    public function listEvent(): \Illuminate\View\View
     {
         $events = Event::with('order')->get();
         return view('story', [
